@@ -37,17 +37,16 @@ stages:
   dependsOn: Build
   condition: succeeded()
   jobs:
-  - deployment: DeployWebApp
-    environment: 'production'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureRmWebAppDeployment@4
-            displayName: 'Azure Web App Deploy'
-            inputs:
-              ConnectionType: 'AzureRM'
-              azureSubscription: '$(azureSubscription)'
-              appType: 'webAppLinux' # Change to 'webApp' if you are using Windows
-              WebAppName: '$(webAppName)'
-              packageForLinux: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
+  - job: DeployWebApp
+    steps:
+    # This downloads the artifact from the build stage
+    - download: current
+      artifact: drop
+
+    - task: AzureWebApp@1
+      displayName: 'Azure Web App Deploy'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        appName: '$(webAppName)'
+        appType: 'webAppLinux'
+        package: '$(Pipeline.Workspace)/drop' # Deploys the folder contents directly
