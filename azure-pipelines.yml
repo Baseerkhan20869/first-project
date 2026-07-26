@@ -2,66 +2,28 @@ trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
 variables:
-  azureSubscription: 'azurerm'        # Azure DevOps service connection name
-  webAppName: 'first-azure-devops'    # Azure Web App name
+  azureSubscription: 'azurerm'          # Azure DevOps service connection
+  webAppName: 'first-azure-devops'      # Your App Service name
 
-stages:
-# ==========================
-# BUILD STAGE
-# ==========================
-- stage: Build
-  displayName: 'Build and Package'
+steps:
+- checkout: self
 
-  jobs:
-  - job: Build
-    displayName: 'Build'
+- task: ArchiveFiles@2
+  displayName: 'Create ZIP package'
+  inputs:
+    rootFolderOrFile: '$(Build.SourcesDirectory)'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/website.zip'
+    replaceExistingArchive: true
 
-    steps:
-    - checkout: self
-
-    - task: ArchiveFiles@2
-      displayName: 'Create ZIP Package'
-      inputs:
-        rootFolderOrFile: '$(Build.SourcesDirectory)'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/website.zip'
-        replaceExistingArchive: true
-
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifact'
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'drop'
-        publishLocation: 'Container'
-
-# ==========================
-# DEPLOY STAGE
-# ==========================
-- stage: Deploy
-  displayName: 'Deploy to Azure'
-  dependsOn: Build
-
-  jobs:
-  - deployment: DeployWeb
-    displayName: 'Deploy Website'
-    environment: production
-
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-
-          - download: current
-            artifact: drop
-
-          - task: AzureWebApp@1
-            displayName: 'Deploy to Azure Web App'
-            inputs:
-              azureSubscription: '$(azureSubscription)'
-              appName: '$(webAppName)'
-              appType: 'webAppLinux'
-              package: '$(Pipeline.Workspace)/drop/website.zip'
+- task: AzureWebApp@1
+  displayName: 'Deploy to Azure Web App'
+  inputs:
+    azureSubscription: '$(azureSubscription)'
+    appName: '$(webAppName)'
+    appType: 'webAppLinux'
+    package: '$(Build.ArtifactStagingDirectory)/website.zip'
