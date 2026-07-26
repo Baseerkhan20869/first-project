@@ -1,52 +1,67 @@
 trigger:
 - main
+
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: ubuntu-latest
 
 variables:
-  # Replace these with your actual Azure details
-  azureSubscription: 'azurerm'
-  webAppName: 'first-azure-devops'
+  azureSubscription: 'azurerm'        # Azure DevOps service connection name
+  webAppName: 'first-azure-devops'    # Azure Web App name
 
 stages:
-# 1. BUILD STAGE
+# ==========================
+# BUILD STAGE
+# ==========================
 - stage: Build
   displayName: 'Build and Package'
+
   jobs:
-  - job: BuildJob
+  - job: Build
+    displayName: 'Build'
+
     steps:
+    - checkout: self
+
     - task: ArchiveFiles@2
-      displayName: 'Archive source files'
+      displayName: 'Create ZIP Package'
       inputs:
-        rootFolderOrFile: '$(build.sourcesDirectory)'
+        rootFolderOrFile: '$(Build.SourcesDirectory)'
         includeRootFolder: false
         archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/website.zip'
         replaceExistingArchive: true
 
     - task: PublishBuildArtifacts@1
-      displayName: 'Publish Build Artifacts'
+      displayName: 'Publish Artifact'
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
         ArtifactName: 'drop'
         publishLocation: 'Container'
 
-# 2. DEPLOY STAGE
+# ==========================
+# DEPLOY STAGE
+# ==========================
 - stage: Deploy
-  displayName: 'Deploy to Azure Web App'
+  displayName: 'Deploy to Azure'
   dependsOn: Build
-  condition: succeeded()
-  jobs:
-  - job: DeployWebApp
-    steps:
-    # This downloads the artifact from the build stage
-    - download: current
-      artifact: drop
 
-    - task: AzureWebApp@1
-      displayName: 'Azure Web App Deploy'
-      inputs:
-        azureSubscription: '$(azureSubscription)'
-        appName: '$(webAppName)'
-        appType: 'webAppLinux'
-        package: '$(Pipeline.Workspace)/drop' # Deploys the folder contents directly
+  jobs:
+  - deployment: DeployWeb
+    displayName: 'Deploy Website'
+    environment: production
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - download: current
+            artifact: drop
+
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Azure Web App'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              appName: '$(webAppName)'
+              appType: 'webAppLinux'
+              package: '$(Pipeline.Workspace)/drop/website.zip'
