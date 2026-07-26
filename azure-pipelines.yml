@@ -2,28 +2,13 @@ trigger:
 - main
 
 pool:
-  vmImage: 'ubuntu-latest'
-
-variables:
-  azureSubscription: 'azurerm'          # Azure DevOps service connection
-  webAppName: 'first-azure-devops'      # Your App Service name
+  vmImage: ubuntu-latest
 
 steps:
 - checkout: self
 
-- task: ArchiveFiles@2
-  displayName: 'Create ZIP package'
+- task: AzureStaticWebApp@0
   inputs:
-    rootFolderOrFile: '$(Build.SourcesDirectory)'
-    includeRootFolder: false
-    archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/website.zip'
-    replaceExistingArchive: true
-
-- task: AzureWebApp@1
-  displayName: 'Deploy to Azure Web App'
-  inputs:
-    azureSubscription: '$(azureSubscription)'
-    appName: '$(webAppName)'
-    appType: 'webAppLinux'
-    package: '$(Build.ArtifactStagingDirectory)/website.zip'
+    app_location: "/"
+    output_location: "/"
+    azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN)
