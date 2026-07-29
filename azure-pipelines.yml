@@ -22,5 +22,5 @@ steps:
   inputs:
     azureSubscription: 'azureconnection'
     appType: 'webAppLinux'
-    appName: '<testdevops>'
+    appName: 'testdevops'
     package: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
